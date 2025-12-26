@@ -1,0 +1,4 @@
+acdweb_tools.dynamic_links:
+  class: Drupal\Core\Menu\MenuLinkDefault
+  deriver: Drupal\acdweb_tools\Plugin\Menu\UpcomingActivitiesDeriver
+  id: acdweb_tools.dynamic_links

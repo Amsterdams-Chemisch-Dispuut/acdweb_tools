@@ -1,0 +1,17 @@
+acdweb_tools.admin_info:
+  path: '/admin/info'
+  defaults:
+    _controller: '\Drupal\acdweb_tools\Controller\AdminInfoController::content'
+    _title: 'Informatie voor beheerders'
+  requirements:
+    _permission: 'access administration pages'
+  options:
+    _admin_route: TRUE
+
+acdweb_tools.settings:
+  path: '/admin/config/services/acdweb-tools'
+  defaults:
+    _form: '\Drupal\acdweb_tools\Form\AcdwebSettingsForm'
+    _title: 'Informatie ovor beheerders aanpassen'
+  requirements:
+    _permission: 'administer site configuration'

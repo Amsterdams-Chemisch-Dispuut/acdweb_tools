@@ -1,0 +1,9 @@
+acdweb_tools.admin_info_tab:
+  route_name: acdweb_tools.admin_info
+  title: 'View Info'
+  base_route: acdweb_tools.admin_info
+
+acdweb_tools.admin_edit_tab:
+  route_name: acdweb_tools.settings
+  title: 'Edit Info'
+  base_route: acdweb_tools.admin_info

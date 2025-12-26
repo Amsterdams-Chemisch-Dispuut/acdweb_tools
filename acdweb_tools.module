@@ -1,0 +1,105 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\user\UserInterface;
+
+/**
+ * Implements hook_entity_insert().
+ */
+function acdweb_tools_entity_insert(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'node' || $entity->bundle() !== 'to_do') {
+    return;
+  }
+
+  if (!$entity->hasField('field_assignee') || $entity->get('field_assignee')->isEmpty()) {
+    return;
+  }
+
+  $renderer = \Drupal::service('renderer');
+
+  // -- 1. Get the Author (Assigner) Name --
+  $assigner_name = $entity->getOwner()->getDisplayName();
+
+  // -- Process Body --
+  $body_text = '';
+  if ($entity->hasField('body') && !$entity->get('body')->isEmpty()) {
+    $body_render = $entity->get('body')->view(['label' => 'hidden']);
+    $body_text = trim(strip_tags($renderer->renderPlain($body_render)));
+  }
+
+  // -- Process Priority --
+  $priority_text = 'Normal';
+  if ($entity->hasField('field_priority') && !$entity->get('field_priority')->isEmpty()) {
+    $priority_render = $entity->get('field_priority')->view(['label' => 'hidden']);
+    $priority_text = trim(strip_tags($renderer->renderPlain($priority_render)));
+  }
+
+  $mailManager = \Drupal::service('plugin.manager.mail');
+  $module = 'acdweb_tools';
+  $key = 'todo_assigned';
+  $send = true;
+
+  foreach ($entity->get('field_assignee') as $item) {
+    $account = $item->entity;
+
+    if ($account instanceof UserInterface && !$account->isBlocked()) {
+      $to = $account->getEmail();
+      $langcode = $account->getPreferredLangcode();
+
+      $params = [
+        'node_title'    => $entity->label(),
+        'node_url'      => $entity->toUrl('canonical', ['absolute' => TRUE])->toString(),
+        'assignee_name' => $account->getDisplayName(),
+        'assigner_name' => $assigner_name, // <--- Added here
+        'body_content'  => $body_text,
+        'priority'      => $priority_text,
+      ];
+
+      $mailManager->mail($module, $key, $to, $langcode, $params, NULL, $send);
+    }
+  }
+}
+
+/**
+ * Implements hook_mail().
+ */
+function acdweb_tools_mail($key, &$message, $params) {
+  $options = ['langcode' => $message['langcode']];
+
+  switch ($key) {
+    case 'todo_assigned':
+      $message['from'] = \Drupal::config('system.site')->get('mail');
+      
+      $message['subject'] = t('[@priority] New Task: @title', [
+        '@priority' => $params['priority'],
+        '@title' => $params['node_title']
+      ], $options);
+
+      $body_template = <<<EOD
+Hi @name,
+
+Je hebt een nieuwe to-do op de website van @assigner.
+
+Taak: @title
+Prioriteit: @priority
+
+Beschrijving:
+@body_content
+
+Zie alle details hier: @url
+
+Groetjes,
+de Website
+EOD;
+
+      // Pass the template to t() for translation and safe replacement
+      $message['body'][] = t($body_template, [
+        '@name' => $params['assignee_name'],
+        '@title' => $params['node_title'],
+        '@priority' => $params['priority'],
+        '@body_content' => $params['body_content'],
+        '@url' => $params['node_url'],
+      ], $options);
+      break;
+  }
+}
