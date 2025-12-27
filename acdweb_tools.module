@@ -20,6 +20,16 @@ function acdweb_tools_entity_insert(EntityInterface $entity) {
   // -- 1. Get the Author (Assigner) Name --
   $assigner_name = $entity->getOwner()->getDisplayName();
 
+  // -- 2. Collect ALL Assignee Names first --
+  $assignee_names = [];
+  foreach ($entity->get('field_assignee') as $item) {
+    if ($item->entity instanceof UserInterface) {
+      $assignee_names[] = $item->entity->getDisplayName();
+    }
+  }
+  // Create a comma-separated string (e.g., "John Doe, Jane Smith")
+  $all_assignees_string = implode(', ', $assignee_names);
+
   // -- Process Body --
   $body_text = '';
   if ($entity->hasField('body') && !$entity->get('body')->isEmpty()) {
@@ -39,6 +49,7 @@ function acdweb_tools_entity_insert(EntityInterface $entity) {
   $key = 'todo_assigned';
   $send = true;
 
+  // -- Loop again to send the emails --
   foreach ($entity->get('field_assignee') as $item) {
     $account = $item->entity;
 
@@ -50,7 +61,8 @@ function acdweb_tools_entity_insert(EntityInterface $entity) {
         'node_title'    => $entity->label(),
         'node_url'      => $entity->toUrl('canonical', ['absolute' => TRUE])->toString(),
         'assignee_name' => $account->getDisplayName(),
-        'assigner_name' => $assigner_name, // <--- Added here
+        'assigner_name' => $assigner_name,
+        'all_assignees' => $all_assignees_string, // <--- Added here
         'body_content'  => $body_text,
         'priority'      => $priority_text,
       ];
@@ -78,10 +90,11 @@ function acdweb_tools_mail($key, &$message, $params) {
       $body_template = <<<EOD
 Hi @name,
 
-Je hebt een nieuwe to-do op de website van @assigner.
+Je hebt een nieuwe to-do op de website van @assigner_name.
 
 Taak: @title
 Prioriteit: @priority
+Toegewezen aan: @all_assignees
 
 Beschrijving:
 @body_content
@@ -94,11 +107,13 @@ EOD;
 
       // Pass the template to t() for translation and safe replacement
       $message['body'][] = t($body_template, [
-        '@name' => $params['assignee_name'],
-        '@title' => $params['node_title'],
-        '@priority' => $params['priority'],
-        '@body_content' => $params['body_content'],
-        '@url' => $params['node_url'],
+        '@name'          => $params['assignee_name'],
+        '@assigner_name' => $params['assigner_name'], // Note: You missed this in your original array
+        '@title'         => $params['node_title'],
+        '@priority'      => $params['priority'],
+        '@all_assignees' => $params['all_assignees'], // <--- Added here
+        '@body_content'  => $params['body_content'],
+        '@url'           => $params['node_url'],
       ], $options);
       break;
   }
