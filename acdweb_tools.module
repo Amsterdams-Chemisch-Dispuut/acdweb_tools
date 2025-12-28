@@ -2,6 +2,9 @@
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\user\UserInterface;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Url;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
  * Implements hook_entity_insert().
@@ -116,5 +119,43 @@ EOD;
         '@url'           => $params['node_url'],
       ], $options);
       break;
+  }
+}
+
+/**
+ * Implements hook_entity_view().
+ *
+ * Logic derived from ECA process: process_epdze5j (Mark done button).
+ */
+function acdweb_tools_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
+  // 1. Check if this is a 'to_do' node and we are in 'full' view mode.
+  // We use full view to prevent this triggering on teasers/lists.
+  if ($entity->getEntityTypeId() !== 'node' || $entity->bundle() !== 'to_do' || $view_mode !== 'full') {
+    return;
+  }
+
+  // 2. Check for the query parameter '?op=mark_done'.
+  // This matches the ECA condition: [current-page:query:op] equals mark_done.
+  $request = \Drupal::request();
+  $op = $request->query->get('op');
+
+  if ($op === 'mark_done') {
+    
+    // 3. Set field_status to true (1) and save.
+    // Matches ECA action: Set field value '1' to 'field_status'.
+    if ($entity->hasField('field_status') && $entity->get('field_status')->value != 1) {
+      $entity->set('field_status', TRUE);
+      $entity->save();
+      
+      // Optional: Add a message so the user knows it happened.
+      \Drupal::messenger()->addStatus(t('Task marked as done.'));
+    }
+
+    // 4. Redirect to the clean URL (removes the ?op=mark_done parameter).
+    // Matches ECA action: Form state set redirect.
+    $url = $entity->toUrl('canonical', ['absolute' => TRUE])->toString();
+    $response = new RedirectResponse($url);
+    $response->send();
+    exit;
   }
 }
