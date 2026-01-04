@@ -15,3 +15,12 @@ acdweb_tools.settings:
     _title: 'Informatie ovor beheerders aanpassen'
   requirements:
     _permission: 'administer site configuration'
+
+acdweb_tools.mark_done:
+  path: '/node/{node}/mark-done'
+  defaults:
+    _controller: '\Drupal\acdweb_tools\Controller\TaskController::markDone'
+    _title: 'Mark Task as Done'
+  requirements:
+    _permission: 'access content'
+    node: \d+

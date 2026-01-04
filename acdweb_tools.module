@@ -2,9 +2,7 @@
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\user\UserInterface;
-use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
-use Drupal\Core\Url;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Mail\MailFormatHelper;
 
 /**
  * Implements hook_entity_insert().
@@ -30,14 +28,15 @@ function acdweb_tools_entity_insert(EntityInterface $entity) {
       $assignee_names[] = $item->entity->getDisplayName();
     }
   }
-  // Create a comma-separated string (e.g., "John Doe, Jane Smith")
   $all_assignees_string = implode(', ', $assignee_names);
 
   // -- Process Body --
+  // IMPROVEMENT: Used MailFormatHelper to preserve line breaks/paragraphs.
   $body_text = '';
   if ($entity->hasField('body') && !$entity->get('body')->isEmpty()) {
     $body_render = $entity->get('body')->view(['label' => 'hidden']);
-    $body_text = trim(strip_tags($renderer->renderPlain($body_render)));
+    $html = $renderer->renderPlain($body_render);
+    $body_text = MailFormatHelper::htmlToText($html);
   }
 
   // -- Process Priority --
@@ -52,7 +51,7 @@ function acdweb_tools_entity_insert(EntityInterface $entity) {
   $key = 'todo_assigned';
   $send = true;
 
-  // -- Loop again to send the emails --
+  // -- Loop to send the emails --
   foreach ($entity->get('field_assignee') as $item) {
     $account = $item->entity;
 
@@ -65,7 +64,7 @@ function acdweb_tools_entity_insert(EntityInterface $entity) {
         'node_url'      => $entity->toUrl('canonical', ['absolute' => TRUE])->toString(),
         'assignee_name' => $account->getDisplayName(),
         'assigner_name' => $assigner_name,
-        'all_assignees' => $all_assignees_string, // <--- Added here
+        'all_assignees' => $all_assignees_string,
         'body_content'  => $body_text,
         'priority'      => $priority_text,
       ];
@@ -93,7 +92,7 @@ function acdweb_tools_mail($key, &$message, $params) {
       $body_template = <<<EOD
 Hi @name,
 
-Je hebt een nieuwe to-do op de website van @assigner_name.
+Je hebt een nieuwe to-do ontvangen van @assigner_name.
 
 Taak: @title
 Prioriteit: @priority
@@ -108,54 +107,15 @@ Groetjes,
 de Website
 EOD;
 
-      // Pass the template to t() for translation and safe replacement
       $message['body'][] = t($body_template, [
         '@name'          => $params['assignee_name'],
-        '@assigner_name' => $params['assigner_name'], // Note: You missed this in your original array
+        '@assigner_name' => $params['assigner_name'],
         '@title'         => $params['node_title'],
         '@priority'      => $params['priority'],
-        '@all_assignees' => $params['all_assignees'], // <--- Added here
+        '@all_assignees' => $params['all_assignees'],
         '@body_content'  => $params['body_content'],
         '@url'           => $params['node_url'],
       ], $options);
       break;
-  }
-}
-
-/**
- * Implements hook_entity_view().
- *
- * Logic derived from ECA process: process_epdze5j (Mark done button).
- */
-function acdweb_tools_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
-  // 1. Check if this is a 'to_do' node and we are in 'full' view mode.
-  // We use full view to prevent this triggering on teasers/lists.
-  if ($entity->getEntityTypeId() !== 'node' || $entity->bundle() !== 'to_do' || $view_mode !== 'full') {
-    return;
-  }
-
-  // 2. Check for the query parameter '?op=mark_done'.
-  // This matches the ECA condition: [current-page:query:op] equals mark_done.
-  $request = \Drupal::request();
-  $op = $request->query->get('op');
-
-  if ($op === 'mark_done') {
-    
-    // 3. Set field_status to true (1) and save.
-    // Matches ECA action: Set field value '1' to 'field_status'.
-    if ($entity->hasField('field_status') && $entity->get('field_status')->value != 1) {
-      $entity->set('field_status', TRUE);
-      $entity->save();
-      
-      // Optional: Add a message so the user knows it happened.
-      \Drupal::messenger()->addStatus(t('Task marked as done.'));
-    }
-
-    // 4. Redirect to the clean URL (removes the ?op=mark_done parameter).
-    // Matches ECA action: Form state set redirect.
-    $url = $entity->toUrl('canonical', ['absolute' => TRUE])->toString();
-    $response = new RedirectResponse($url);
-    $response->send();
-    exit;
   }
 }
