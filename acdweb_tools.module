@@ -8,6 +8,20 @@ use Drupal\webform\WebformSubmissionInterface;
 use Drupal\user\Entity\User;
 
 /**
+ * Implements hook_theme().
+ */
+function acdweb_tools_theme($existing, $type, $theme, $path) {
+  return [
+    'language_dropdown' => [
+      'variables' => [
+        'links' => [],
+      ],
+      'template' => 'language-dropdown',
+    ],
+  ];
+}
+
+/**
  * Implements hook_webform_submission_insert().
  */
 function acdweb_tools_webform_submission_insert(WebformSubmissionInterface $webform_submission) {

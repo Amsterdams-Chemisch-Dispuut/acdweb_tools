@@ -1,0 +1,179 @@
+/* --- 1. GENERAL STYLING --- */
+
+/* Wrapper */
+.language-switcher-wrapper .bs-dropdown-wrapper {
+  display: inline-flex !important;
+  align-items: center;
+  border-radius: 6px !important;
+  background-color: transparent;
+  transition: background-color 0.15s ease;
+  height: 100%;
+  cursor: pointer;
+  position: relative;
+}
+
+/* Hover Background */
+.language-switcher-wrapper:hover .bs-dropdown-wrapper {
+  background-color: var(--dxpr-theme-secondary-bg) !important;
+}
+
+/* Icon Colors */
+.language-switcher-wrapper .nav-link, 
+.language-switcher-wrapper .nav-link i {
+  color: var(--dxt-setting-menu-text-color) !important;
+  border: none !important;
+}
+
+.language-switcher-wrapper:hover .nav-link, 
+.language-switcher-wrapper:hover .nav-link i {
+  color: var(--dxpr-theme-secondary-text) !important;
+}
+
+/* Trigger Link Sizing */
+.language-switcher-wrapper .nav-link {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 15px !important;
+  height: 100%;
+}
+
+.language-switcher-wrapper .nav-link i {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.language-switcher-wrapper .mobile-label {
+  display: none;
+}
+
+
+/* --- 2. DROPDOWN ITEMS --- */
+
+.language-switcher-wrapper .dropdown-item {
+  white-space: normal !important;
+  padding: 10px 15px !important;
+  margin: 0 !important;
+  color: var(--dxt-setting-menu-text-color, #333);
+}
+
+.language-switcher-wrapper .dropdown-item:hover {
+  background-color: var(--dxpr-theme-secondary-bg) !important;
+  color: var(--dxpr-theme-secondary-text) !important;
+}
+
+.language-switcher-wrapper .dropdown-item.active {
+  background-color: var(--dxt-color-accent1) !important;
+  color: #fff !important;
+}
+
+
+/* --- 3. DESKTOP SPECIFIC (The Clean Fix) --- */
+@media (min-width: 992px) {
+  .region-navigation-collapsible {
+    display: flex !important;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+  #block-bootstraplanguageglobedropdown {
+    margin-left: auto;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+
+  /* WRAPPER BRIDGE (This is the new fix) */
+  /* We place the bridge on the WRAPPER instead of the menu. */
+  /* This fills the gap between the globe and the menu so the mouse doesn't fall through. */
+  .language-switcher-wrapper::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    height: 20px; /* Covers the margin gap */
+    background: transparent;
+    z-index: 10;
+  }
+
+  /* DROPDOWN MENU */
+  .language-switcher-wrapper .dropdown-menu.level-2 {
+    display: none; 
+    
+    /* POSITIONING */
+    top: 100% !important;
+    right: 0;
+    left: auto;
+    margin-top: 10px !important; 
+    padding: 0 !important;
+    
+    /* VISUALS */
+    border-radius: 6px !important;
+    border: 1px solid rgba(0,0,0,0.15) !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.175) !important;
+    background-color: #fff;
+    
+    /* CRITICAL: Now we can use overflow: hidden! */
+    /* This forces the container to cut off the sharp corners of the items inside */
+    overflow: hidden !important; 
+  }
+
+  /* SHOW ON HOVER */
+  /* Hovering the wrapper (or the bridge) keeps this open */
+  .language-switcher-wrapper:hover .dropdown-menu {
+    display: block !important;
+  }
+}
+
+
+/* --- 4. MOBILE FIXES --- */
+@media (max-width: 991px) {
+  
+  .region-navigation-collapsible { display: block !important; }
+  
+  #block-bootstraplanguageglobedropdown {
+    display: block;
+    width: 100%;
+    margin-top: 15px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 9999;
+  }
+
+  .language-switcher-wrapper .bs-dropdown-wrapper {
+    width: 100%;
+    background-color: transparent !important;
+  }
+  
+  .language-switcher-wrapper .nav-link {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 15px 20px !important;
+    pointer-events: auto !important;
+  }
+  
+  .language-switcher-wrapper .mobile-label {
+    display: inline-block;
+    margin-left: 12px;
+    font-weight: 500;
+  }
+
+  .language-switcher-wrapper .dropdown-menu.level-2 {
+    position: static !important;
+    float: none;
+    width: 100%;
+    
+    border-radius: 0 !important;
+    background-color: rgba(0,0,0,0.05); 
+    padding: 0 !important;
+    margin: 0 !important;
+    display: none;
+    /* Ensure mobile items aren't clipped if accordion behavior needs it */
+    overflow: visible !important; 
+  }
+  
+  .language-switcher-wrapper .dropdown-menu.show {
+    display: block !important;
+  }
+}

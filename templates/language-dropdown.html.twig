@@ -1,0 +1,40 @@
+<div class="nav-item dropdown language-switcher-wrapper">
+  
+  {# 
+     1. Rounded Wrapper: Matches .bs-dropdown-wrapper from your snippet 
+     2. We use 'data-bs-toggle' AND a custom ID for the JS fallback
+  #}
+  <div class="bs-dropdown-wrapper">
+    <a 
+      class="nav-link dropdown-toggle" 
+      href="#" 
+      id="languageDropdown" 
+      role="button" 
+      data-bs-toggle="dropdown" 
+      aria-expanded="false" 
+      title="{{ 'Select Language'|t }}"
+    >
+      <i class="fas fa-globe"></i>
+      <span class="mobile-label">Language</span>
+    </a>
+  </div>
+
+  {# 
+     Added 'level-2' class: 
+     This forces the theme to apply the border-radius: 6px and shadow defined in your CSS.
+  #}
+  <ul class="dropdown-menu dropdown-menu-end level-2 shadow" aria-labelledby="languageDropdown">
+    {% for lang_code, link in links %}
+      <li>
+        <a 
+          class="dropdown-item {{ link.is_active ? 'active' : '' }}" 
+          href="{{ link.url }}" 
+          hreflang="{{ lang_code }}"
+        >
+          {{ link.name }}
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+
+</div>

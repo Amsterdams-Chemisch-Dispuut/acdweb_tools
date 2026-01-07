@@ -1,0 +1,10 @@
+language-styling:
+  version: 1.x
+  css:
+    theme:
+      css/language-switcher.css: {}
+  js:
+    js/language-switcher.js: {}
+  dependencies:
+    - core/drupal
+    - core/jquery
