@@ -3,6 +3,124 @@
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\user\UserInterface;
 use Drupal\Core\Mail\MailFormatHelper;
+use Drupal\Core\Queue\QueueFactory;
+use Drupal\webform\WebformSubmissionInterface;
+use Drupal\user\Entity\User;
+
+/**
+ * Implements hook_webform_submission_insert().
+ */
+function acdweb_tools_webform_submission_insert(WebformSubmissionInterface $webform_submission) {
+  // 1. Check if this is the correct webform
+  if ($webform_submission->getWebform()->id() !== 'declaratieformulier') {
+    return;
+  }
+
+  // 2. Get the submission data
+  $data = $webform_submission->getData();
+
+  // 3. CHECKBOX CHECK: Only proceed if 'store_iban' is checked (truthy)
+  if (empty($data['store_iban'])) {
+    return;
+  }
+
+  // 4. Get the values from the form
+  $new_iban = isset($data['iban']) ? $data['iban'] : NULL;
+  $new_holder = isset($data['rekeninghouder']) ? $data['rekeninghouder'] : NULL;
+
+  // 5. Update the User Profile
+  $uid = \Drupal::currentUser()->id();
+  
+  // Ensure the user is logged in (uid > 0)
+  if ($uid > 0) {
+    $user = User::load($uid);
+    $save_needed = FALSE;
+
+    // --- Update IBAN ---
+    if ($new_iban && $user->hasField('field_iban')) {
+      // Only update if value is different
+      if ($user->get('field_iban')->value !== $new_iban) {
+        $user->set('field_iban', $new_iban);
+        $save_needed = TRUE;
+      }
+    }
+
+    // --- Update Rekeninghouder ---
+    if ($new_holder && $user->hasField('field_rekeninghouder')) {
+      // Only update if value is different
+      if ($user->get('field_rekeninghouder')->value !== $new_holder) {
+        $user->set('field_rekeninghouder', $new_holder);
+        $save_needed = TRUE;
+      }
+    }
+
+    // --- Save User Entity ---
+    if ($save_needed) {
+      $user->save();
+    }
+  }
+}
+
+/**
+ * Implements hook_user_insert().
+ * Triggers when a user is created (e.g., via Feeds).
+ */
+function acdweb_tools_user_insert(UserInterface $account) {
+  // Optional: Only queue if the user was created by an admin or feed (not self-registration).
+  // Checks if the account is active and not blocked.
+  if ($account->isActive()) {
+    // 1. Get the queue.
+    /** @var QueueFactory $queue_factory */
+    $queue_factory = \Drupal::service('queue');
+    $queue = $queue_factory->get('acd_user_import_emails');
+
+    // 2. Add user ID to the queue for later processing.
+    $queue->createItem($account->id());
+  }
+}
+
+/**
+ * Implements hook_cron().
+ * Processes the queued emails in the background.
+ */
+function acdweb_tools_cron() {
+  // 1. Get the queue.
+  $queue_factory = \Drupal::service('queue');
+  $queue = $queue_factory->get('acd_user_import_emails');
+  $user_storage = \Drupal::entityTypeManager()->getStorage('user');
+
+  // 2. Process a batch of items (e.g., 50 emails per cron run to prevent timeout).
+  // Increase '50' if your server is powerful, decrease if it times out.
+  $limit = 50;
+  $count = 0;
+
+  while ($count < $limit && ($item = $queue->claimItem())) {
+    try {
+      // Load the user by ID.
+      $account = $user_storage->load($item->data);
+
+      if ($account instanceof UserInterface) {
+        // 3. Send the email using the "register_admin_created" template.
+        // This function automatically respects your language/translation settings.
+        _user_mail_notify('register_admin_created', $account);
+      }
+
+      // 4. Remove from queue on success.
+      $queue->deleteItem($item);
+    }
+    catch (\Exception $e) {
+      // Log error but release item to try again later (or delete if permanent error).
+      \Drupal::logger('acd_custom')->error('Failed to send email to UID @uid: @message', [
+        '@uid' => $item->data,
+        '@message' => $e->getMessage(),
+      ]);
+      // Release the item immediately so it can be retried next cron (optional).
+      // $queue->releaseItem($item); 
+    }
+    
+    $count++;
+  }
+}
 
 /**
  * Implements hook_entity_insert().
