@@ -24,3 +24,19 @@ acdweb_tools.mark_done:
   requirements:
     _permission: 'access content'
     node: \d+
+
+acdweb_tools.calendar:
+  path: '/activiteiten'
+  defaults:
+    _controller: '\Drupal\acdweb_tools\Controller\CalendarController::content'
+    _title: 'Activiteiten'
+  requirements:
+    _permission: 'access content'
+
+acdweb_tools.events_json:
+  path: '/events.json'
+  defaults:
+    _controller: '\Drupal\acdweb_tools\Controller\EventsJsonController::handle'
+    _title: 'Events JSON'
+  requirements:
+    _permission: 'access content'

@@ -1,0 +1,58 @@
+:root {
+  /* --- 1. CALENDAR BUTTONS (Green / Base Color) --- */
+  --fc-button-bg-color: var(--dxt-color-base);
+  --fc-button-border-color: var(--dxt-color-base);
+  --fc-button-hover-bg-color: var(--dxt-color-base); 
+  --fc-button-hover-border-color: var(--dxt-color-base);
+  --fc-button-active-bg-color: var(--dxt-color-base);
+  --fc-button-active-border-color: var(--dxt-color-base);
+
+  /* --- 2. TODAY HIGHLIGHT --- */
+  --fc-today-bg-color: rgba(244, 236, 194, 0.3);
+}
+
+/* --- 3. GRID EVENTS ONLY (Month/Week View) --- */
+/* We target ONLY the grid events to make them Orange blocks */
+.fc-daygrid-event, .fc-timegrid-event {
+  background-color: var(--dxt-color-accent1) !important;
+  border-color: var(--dxt-color-accent1) !important;
+  color: #ffffff !important; /* White text */
+  border-radius: 4px;
+}
+
+/* --- 4. LIST VIEW RESET --- */
+/* Ensure List View rows stay white/transparent with normal text */
+.fc-list-event {
+  background-color: transparent !important;
+  color: inherit !important; /* Keep text standard color */
+  cursor: pointer;
+}
+.fc-list-event:hover td {
+  background-color: rgba(0,0,0,0.05) !important; /* Subtle hover effect */
+}
+/* The Dot in List View should be Orange */
+.fc-list-event-dot {
+  border-color: var(--dxt-color-accent1) !important;
+}
+
+/* --- 5. TEXT ALIGNMENT (Grid) --- */
+/* Top-align Time and Title */
+.fc-event-main-frame {
+  align-items: flex-start !important; 
+}
+.fc-event-title {
+  white-space: normal !important;
+  overflow: visible !important;
+}
+
+/* --- 6. GOOGLE BUTTON FIX --- */
+/* Use your Base Color instead of Blue */
+#google-calendar-btn {
+  border: 1px solid var(--dxt-color-base) !important;
+  background: transparent !important;
+  color: var(--dxt-color-base) !important;
+}
+#google-calendar-btn:hover {
+  background: var(--dxt-color-base) !important;
+  color: white !important;
+}
